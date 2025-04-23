@@ -1,18 +1,25 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import CustomUser
+import re
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+    pin = serializers.CharField(write_only=True, required=True, max_length=4, min_length=4)
+    voice_mode = serializers.BooleanField(required=True)
+    enable_biometrics_login = serializers.BooleanField(required=True)
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'password', 'confirm_password', 'business_type', 'full_name', 'phone_number', 'country', 'state_province', 'preferred_language', 'language']
+        fields = ['email', 'password', 'confirm_password', 'business_type', 'full_name', 'phone_number', 'country', 'state_province', 'preferred_language', 'language', 'pin', 'voice_mode', 'enable_biometrics_login']
 
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        pin = attrs.get('pin')
+        if not re.fullmatch(r'\\d{4}', pin):
+            raise serializers.ValidationError({"pin": "Pin must be exactly 4 digits."})
         return attrs
 
     def create(self, validated_data):
