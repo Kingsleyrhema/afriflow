@@ -1,0 +1,54 @@
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.db import models
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
+
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    BUSINESS_TYPE_CHOICES = [
+        ('business', 'Business'),
+        ('individual', 'Individual'),
+    ]
+
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20)
+    country = models.CharField(max_length=100)
+    state_province = models.CharField(max_length=100)
+    preferred_language = models.CharField(max_length=50)
+    business_type = models.CharField(max_length=10, choices=BUSINESS_TYPE_CHOICES)
+    language = models.CharField(max_length=50)
+
+    pin = models.CharField(max_length=4, default='0000')
+    voice_mode = models.BooleanField(default=False)
+    enable_biometrics_login = models.BooleanField(default=False)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['full_name', 'phone_number', 'country', 'state_province', 'preferred_language', 'business_type', 'language']
+
+    def __str__(self):
+        return self.email
