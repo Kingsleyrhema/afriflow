@@ -18,7 +18,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         pin = attrs.get('pin')
-        if not re.fullmatch(r'\\d{4}', pin):
+        if not re.fullmatch(r'\d{4}', str(pin)):
             raise serializers.ValidationError({"pin": "Pin must be exactly 4 digits."})
         return attrs
 
