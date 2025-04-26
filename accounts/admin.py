@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, Wallet
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -21,3 +21,11 @@ class CustomUserAdmin(UserAdmin):
     ordering = ('email',)
 
 admin.site.register(CustomUser, CustomUserAdmin)
+
+from .models import Wallet
+
+@admin.register(Wallet)
+class WalletAdmin(admin.ModelAdmin):
+    list_display = ('user', 'wallet_number', 'balance')
+    search_fields = ('user__email', 'wallet_number')
+
