@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import CustomUser
+from .models import CustomUser, Wallet
 import re
 
 class RegistrationSerializer(serializers.ModelSerializer):
