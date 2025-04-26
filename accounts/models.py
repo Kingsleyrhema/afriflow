@@ -54,10 +54,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
     
     class Wallet(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='wallet')
-    wallet_number = models.CharField(max_length=20, unique=True)
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+        user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='wallet')
+        wallet_number = models.CharField(max_length=20, unique=True)
+        balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
-    def __str__(self):
-        return f"{self.user.email} Wallet {self.wallet_number} - Balance: {self.balance}"
+        def __str__(self):
+            return f"{self.user.email} Wallet {self.wallet_number} - Balance: {self.balance}"
 
