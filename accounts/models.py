@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+import random
+from django.conf import settings
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -57,8 +59,19 @@ from django.conf import settings
 
 class Wallet(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='wallet')
-    wallet_number = models.CharField(max_length=20, unique=True)
+    wallet_number = models.CharField(max_length=6, unique=True, blank=True)
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    def save(self, *args, **kwargs):
+        if not self.wallet_number:
+            self.wallet_number = self._generate_unique_wallet_number()
+        super().save(*args, **kwargs)
+
+    def _generate_unique_wallet_number(self):
+        while True:
+            number = f"{random.randint(0, 999999):06d}"
+            if not Wallet.objects.filter(wallet_number=number).exists():
+                return number
 
     def __str__(self):
         return f"{self.user.email} Wallet {self.wallet_number} - Balance: {self.balance}"
