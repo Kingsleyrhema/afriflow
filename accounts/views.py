@@ -79,9 +79,10 @@ class TransferView(APIView):
             return Response({'error': 'recipient_wallet_number and amount are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            amount = float(amount)
-        except ValueError:
+            amount = Decimal(str(amount))
+        except Exception:
             return Response({'error': 'Invalid amount format.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
         sender_wallet = request.user.wallet
 
