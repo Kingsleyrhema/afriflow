@@ -5,7 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from .serializers import RegistrationSerializer, LoginSerializer, UserInfoSerializer, WalletSerializer, DepositSerializer, TransferSerializer
 from rest_framework.views import APIView
-from .models import Wallet, CustomUser
+from .models import Wallet, CustomUser, Transaction
 from django.db import transaction
 
 class RegistrationView(generics.CreateAPIView):
@@ -68,23 +68,67 @@ class TransferView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        serializer = TransferSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        recipient_wallet_number = serializer.validated_data['recipient_wallet_number']
-        amount = serializer.validated_data['amount']
-        sender_wallet = request.user.wallet
+        step = request.data.get('step', 'verify')  # 'verify' or 'transfer'
+        recipient_wallet_number = request.data.get('recipient_wallet_number')
+        amount = request.data.get('amount')
+        description = request.data.get('description', '')
+        pin = request.data.get('pin', None)
 
-        if sender_wallet.balance < amount:
-            return Response({'error': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not recipient_wallet_number or not amount:
+            return Response({'error': 'recipient_wallet_number and amount are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            recipient_wallet = Wallet.objects.select_for_update().get(wallet_number=recipient_wallet_number)
-        except Wallet.DoesNotExist:
-            return Response({'error': 'Recipient wallet not found.'}, status=status.HTTP_404_NOT_FOUND)
+            amount = float(amount)
+        except ValueError:
+            return Response({'error': 'Invalid amount format.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        sender_wallet.balance -= amount
-        recipient_wallet.balance += amount
-        sender_wallet.save()
-        recipient_wallet.save()
+        sender_wallet = request.user.wallet
 
-        return Response({'message': f'Transferred {amount} to {recipient_wallet_number} successfully.', 'balance': sender_wallet.balance}, status=status.HTTP_200_OK)
+        if step == 'verify':
+            # Step 1: Verify recipient wallet number and return recipient name
+            try:
+                recipient_wallet = Wallet.objects.get(wallet_number=recipient_wallet_number)
+                recipient_user = recipient_wallet.user
+                return Response({'recipient_name': recipient_user.full_name}, status=status.HTTP_200_OK)
+            except Wallet.DoesNotExist:
+                return Response({'error': 'Recipient wallet not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        elif step == 'transfer':
+            # Step 2: Complete transfer after pin validation
+            if pin is None:
+                return Response({'error': 'PIN is required to complete the transfer.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if pin != request.user.pin:
+                return Response({'error': 'Invalid PIN.'}, status=status.HTTP_403_FORBIDDEN)
+
+            if sender_wallet.balance < amount:
+                return Response({'error': 'Insufficient balance.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                recipient_wallet = Wallet.objects.select_for_update().get(wallet_number=recipient_wallet_number)
+                recipient_user = recipient_wallet.user
+            except Wallet.DoesNotExist:
+                return Response({'error': 'Recipient wallet not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+            sender_wallet.balance -= amount
+            recipient_wallet.balance += amount
+            sender_wallet.save()
+            recipient_wallet.save()
+
+            Transaction.objects.create(
+                sender=request.user,
+                amount=amount,
+                receiver_name=recipient_user.full_name,
+                receiver_account_number=recipient_wallet.wallet_number,
+                description=description
+            )
+
+            return Response({
+                'message': f'Transferred {amount} to {recipient_user.full_name} ({recipient_wallet_number}) successfully.',
+                'balance': sender_wallet.balance,
+                'recipient_name': recipient_user.full_name
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({'error': 'Invalid step parameter.'}, status=status.HTTP_400_BAD_REQUEST)
+

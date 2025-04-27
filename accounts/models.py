@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 import random
 from django.conf import settings
+import uuid
+from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -86,3 +88,19 @@ def create_user_wallet(sender, instance, created, **kwargs):
     if created:
         from .models import Wallet
         Wallet.objects.create(user=instance)
+
+
+
+
+class Transaction(models.Model):
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_transactions')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    receiver_name = models.CharField(max_length=255)
+    receiver_account_number = models.CharField(max_length=20)
+    description = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Transaction {self.transaction_id} from {self.sender.email} to {self.receiver_name} ({self.receiver_account_number})"
+
