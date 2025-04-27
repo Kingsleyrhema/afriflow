@@ -7,7 +7,7 @@ from .serializers import RegistrationSerializer, LoginSerializer, UserInfoSerial
 from rest_framework.views import APIView
 from .models import Wallet, CustomUser, Transaction
 from django.db import transaction
-
+from decimal import Decimal
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
@@ -71,6 +71,7 @@ class TransferView(APIView):
         step = request.data.get('step', 'verify')  # 'verify' or 'transfer'
         recipient_wallet_number = request.data.get('recipient_wallet_number')
         amount = request.data.get('amount')
+        amount = Decimal(str(amount))
         description = request.data.get('description', '')
         pin = request.data.get('pin', None)
 
