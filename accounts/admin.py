@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Wallet
+from .models import CustomUser, Wallet, Transaction
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -28,4 +28,13 @@ from .models import Wallet
 class WalletAdmin(admin.ModelAdmin):
     list_display = ('user', 'wallet_number', 'balance')
     search_fields = ('user__email', 'wallet_number')
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ('transaction_id', 'sender', 'receiver_name', 'receiver_account_number', 'amount', 'timestamp')
+    search_fields = ('transaction_id', 'sender__email', 'receiver_name', 'receiver_account_number')
+    list_filter = ('timestamp',)
+    ordering = ('-timestamp',)
+
 
