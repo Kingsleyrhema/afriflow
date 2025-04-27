@@ -77,3 +77,12 @@ class Wallet(models.Model):
         return f"{self.user.email} Wallet {self.wallet_number} - Balance: {self.balance}"
 
 
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=CustomUser)
+def create_user_wallet(sender, instance, created, **kwargs):
+    if created:
+        from .models import Wallet
+        Wallet.objects.create(user=instance)
