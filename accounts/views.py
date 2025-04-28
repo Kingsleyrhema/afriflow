@@ -147,7 +147,15 @@ class TransactionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
+        transaction_type = self.request.query_params.get('type', 'outgoing')  # default to outgoing
+
+        if transaction_type == 'incoming':
+            return Transaction.objects.filter(receiver=user, transaction_type='incoming').order_by('-timestamp')
+        elif transaction_type == 'outgoing':
+            return Transaction.objects.filter(sender=user, transaction_type='outgoing').order_by('-timestamp')
+        else:
+            # If invalid type, return empty queryset or all transactions for safety
+            return Transaction.objects.none()
 
 class TransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer
