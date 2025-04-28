@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegistrationView, LoginView, UserInfoView, WalletInfoView, DepositView, TransferView
+from .views import RegistrationView, LoginView, UserInfoView, WalletInfoView, DepositView, TransferView, TransactionListView, TransactionDetailView
 
 urlpatterns = [
     path('register/', RegistrationView.as_view(), name='register'),
@@ -8,4 +8,8 @@ urlpatterns = [
     path('wallet/', WalletInfoView.as_view(), name='wallet-info'),
     path('wallet/deposit/', DepositView.as_view(), name='wallet-deposit'),
     path('wallet/transfer/', TransferView.as_view(), name='wallet-transfer'),
+    path('wallet/transactions/', TransactionListView.as_view(), name='wallet-transactions'),
+    path('wallet/transactions/<uuid:transaction_id>/', TransactionDetailView.as_view(), name='wallet-transaction-detail'),
+
+
 ]

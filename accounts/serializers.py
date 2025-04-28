@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import CustomUser, Wallet
+from .models import CustomUser, Wallet, Transaction
 import re
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -61,7 +61,18 @@ class WalletSerializer(serializers.ModelSerializer):
 class DepositSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
 
-class TransferSerializer(serializers.Serializer):
-    recipient_wallet_number = serializers.CharField(max_length=20)
-    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
 
+
+class TransferSerializer(serializers.Serializer):
+    recipient_wallet_number = serializers.CharField(max_length=6)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    description = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    pin = serializers.CharField(max_length=4, required=True, allow_blank=False)
+    step = serializers.ChoiceField(choices=['verify', 'transfer'], default='verify')
+
+    
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = ['transaction_id', 'sender', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp']
+        read_only_fields = ['transaction_id', 'timestamp', 'sender']

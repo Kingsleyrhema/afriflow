@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
-from .serializers import RegistrationSerializer, LoginSerializer, UserInfoSerializer, WalletSerializer, DepositSerializer, TransferSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, UserInfoSerializer, WalletSerializer, DepositSerializer, TransferSerializer, TransactionSerializer
 from rest_framework.views import APIView
 from .models import Wallet, CustomUser, Transaction
 from django.db import transaction
@@ -68,26 +68,18 @@ class TransferView(APIView):
 
     @transaction.atomic
     def post(self, request):
-        step = request.data.get('step', 'verify')  # 'verify' or 'transfer'
-        recipient_wallet_number = request.data.get('recipient_wallet_number')
-        amount = request.data.get('amount')
-        amount = Decimal(str(amount))
-        description = request.data.get('description', '')
-        pin = request.data.get('pin', None)
+        serializer = TransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not recipient_wallet_number or not amount:
-            return Response({'error': 'recipient_wallet_number and amount are required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            amount = Decimal(str(amount))
-        except Exception:
-            return Response({'error': 'Invalid amount format.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        step = serializer.validated_data.get('step', 'verify')
+        recipient_wallet_number = serializer.validated_data['recipient_wallet_number']
+        amount = serializer.validated_data['amount']
+        description = serializer.validated_data.get('description', '')
+        pin = serializer.validated_data.get('pin', None)
 
         sender_wallet = request.user.wallet
 
         if step == 'verify':
-            # Step 1: Verify recipient wallet number and return recipient name
             try:
                 recipient_wallet = Wallet.objects.get(wallet_number=recipient_wallet_number)
                 recipient_user = recipient_wallet.user
@@ -96,7 +88,6 @@ class TransferView(APIView):
                 return Response({'error': 'Recipient wallet not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         elif step == 'transfer':
-            # Step 2: Complete transfer after pin validation
             if pin is None:
                 return Response({'error': 'PIN is required to complete the transfer.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -133,4 +124,22 @@ class TransferView(APIView):
 
         else:
             return Response({'error': 'Invalid step parameter.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+class TransactionListView(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Transaction.objects.filter(sender=user).order_by('-timestamp')
+
+class TransactionDetailView(generics.RetrieveAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'transaction_id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return Transaction.objects.filter(sender=user)
 
