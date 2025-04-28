@@ -110,19 +110,22 @@ class TransferView(APIView):
             sender_wallet.save()
             recipient_wallet.save()
 
-            Transaction.objects.create(
-            sender=request.user,
-            receiver=recipient_user,
-            amount=amount,
-            receiver_name=recipient_user.full_name,
-            receiver_account_number=recipient_wallet.wallet_number,
-            description=description,
-             )
+            transaction = Transaction.objects.create(
+                sender=request.user,
+                receiver=recipient_user,
+                amount=amount,
+                receiver_name=recipient_user.full_name,
+                receiver_account_number=recipient_wallet.wallet_number,
+                description=description,
+            )
 
             return Response({
                 'message': f'Transferred {amount} to {recipient_user.full_name} ({recipient_wallet_number}) successfully.',
                 'balance': sender_wallet.balance,
-                'recipient_name': recipient_user.full_name
+                'recipient_name': recipient_user.full_name,
+                'transaction_id': transaction.transaction_id,
+                'amount': amount,
+                'timestamp': transaction.timestamp
             }, status=status.HTTP_200_OK)
 
         else:
