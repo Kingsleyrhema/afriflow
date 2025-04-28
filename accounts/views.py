@@ -111,8 +111,7 @@ class TransferView(APIView):
             recipient_wallet.save()
 
             Transaction.objects.create(
-            sender=request.user,
-            receiver=recipient_user,
+            sender=request.user.full_name,
             amount=amount,
             receiver_name=recipient_user.full_name,
             receiver_account_number=recipient_wallet.wallet_number,

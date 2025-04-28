@@ -76,7 +76,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Transaction
-        fields = ['transaction_id', 'sender', 'receiver', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp', 'transaction_direction']
+        fields = ['transaction_id', 'sender', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp', 'transaction_direction']
         read_only_fields = ['transaction_id', 'timestamp', 'sender', 'receiver']
 
     def get_transaction_direction(self, obj):
