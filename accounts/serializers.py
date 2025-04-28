@@ -67,7 +67,7 @@ class TransferSerializer(serializers.Serializer):
     recipient_wallet_number = serializers.CharField(max_length=6)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     description = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    pin = serializers.CharField(max_length=4, required=True, allow_blank=False)
+    pin = serializers.CharField(max_length=4, required=False, allow_blank=True)
     step = serializers.ChoiceField(choices=['verify', 'transfer'], default='verify')
 
     
