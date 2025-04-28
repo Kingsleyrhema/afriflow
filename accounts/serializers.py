@@ -88,7 +88,6 @@ class TransactionSerializer(serializers.ModelSerializer):
             'description',
             'timestamp',
             'transaction_direction',
-            'transaction_type'
         ]
         read_only_fields = ['transaction_id', 'timestamp']
 
