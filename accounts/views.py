@@ -9,6 +9,7 @@ from .models import Wallet, CustomUser, Transaction
 from django.db import transaction
 from decimal import Decimal
 from django.db.models import Q
+
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
@@ -139,7 +140,6 @@ class TransferView(APIView):
 
         else:
             return Response({'error': 'Invalid step parameter.'}, status=status.HTTP_400_BAD_REQUEST)
-        
 
 class TransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer
@@ -147,15 +147,15 @@ class TransactionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        transaction_type = self.request.query_params.get('type', 'outgoing')  # default to outgoing
+        transaction_type = self.request.query_params.get('type', None)
 
         if transaction_type == 'incoming':
             return Transaction.objects.filter(receiver=user, transaction_type='incoming').order_by('-timestamp')
         elif transaction_type == 'outgoing':
             return Transaction.objects.filter(sender=user, transaction_type='outgoing').order_by('-timestamp')
         else:
-            # If invalid type, return empty queryset or all transactions for safety
-            return Transaction.objects.none()
+            # Return all transactions where user is sender or receiver
+            return Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
 
 class TransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer
@@ -164,5 +164,4 @@ class TransactionDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Transaction.objects.filter(sender=user)
-
+        return Transaction.objects.filter(Q(sender=user) | Q(receiver=user))
