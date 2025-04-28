@@ -149,13 +149,12 @@ class TransactionListView(generics.ListAPIView):
         user = self.request.user
         transaction_type = self.request.query_params.get('type', None)
 
-        if transaction_type == 'incoming':
-            return Transaction.objects.filter(receiver=user, transaction_type='incoming').order_by('-timestamp')
-        elif transaction_type == 'outgoing':
-            return Transaction.objects.filter(sender=user, transaction_type='outgoing').order_by('-timestamp')
-        else:
-            # Return all transactions where user is sender or receiver
-            return Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
+        queryset = Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
+
+        if transaction_type in ['incoming', 'outgoing']:
+            queryset = queryset.filter(transaction_type=transaction_type)
+
+        return queryset
 
 class TransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer
