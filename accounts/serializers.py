@@ -72,7 +72,19 @@ class TransferSerializer(serializers.Serializer):
 
     
 class TransactionSerializer(serializers.ModelSerializer):
+    transaction_direction = serializers.SerializerMethodField()
+
     class Meta:
         model = Transaction
-        fields = ['transaction_id', 'sender', 'receiver', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp']
+        fields = ['transaction_id', 'sender', 'receiver', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp', 'transaction_direction']
         read_only_fields = ['transaction_id', 'timestamp', 'sender', 'receiver']
+
+    def get_transaction_direction(self, obj):
+        request = self.context.get('request', None)
+        if request and hasattr(request, 'user'):
+            user = request.user
+            if obj.sender == user:
+                return 'outgoing'
+            elif obj.receiver == user:
+                return 'incoming'
+        return 'unknown'
