@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from .models import Wallet, CustomUser, Transaction
 from django.db import transaction
 from decimal import Decimal
+from django.db.models import Q
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
     permission_classes = [AllowAny]
@@ -108,12 +109,26 @@ class TransferView(APIView):
             sender_wallet.save()
             recipient_wallet.save()
 
+            # Create outgoing transaction for sender
             Transaction.objects.create(
                 sender=request.user,
+                receiver=recipient_user,
                 amount=amount,
                 receiver_name=recipient_user.full_name,
                 receiver_account_number=recipient_wallet.wallet_number,
-                description=description
+                description=description,
+                transaction_type='outgoing'
+            )
+
+            # Create incoming transaction for recipient
+            Transaction.objects.create(
+                sender=request.user,
+                receiver=recipient_user,
+                amount=amount,
+                receiver_name=request.user.full_name,
+                receiver_account_number=sender_wallet.wallet_number,
+                description=description,
+                transaction_type='incoming'
             )
 
             return Response({
@@ -132,7 +147,7 @@ class TransactionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Transaction.objects.filter(sender=user).order_by('-timestamp')
+        return Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
 
 class TransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer
