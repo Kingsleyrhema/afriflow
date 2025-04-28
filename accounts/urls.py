@@ -9,6 +9,7 @@ urlpatterns = [
     path('wallet/deposit/', DepositView.as_view(), name='wallet-deposit'),
     path('wallet/transfer/', TransferView.as_view(), name='wallet-transfer'),
     path('wallet/transactions/', TransactionListView.as_view(), name='wallet-transactions'),
+    path('wallet/transactions/<uuid:transaction_id>/', TransactionDetailView.as_view(), name='wallet-transaction-detail'),
 
 
 ]

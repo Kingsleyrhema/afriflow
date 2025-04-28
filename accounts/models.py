@@ -93,20 +93,14 @@ def create_user_wallet(sender, instance, created, **kwargs):
 
 
 class Transaction(models.Model):
-    TRANSACTION_TYPE_CHOICES = [
-        ('incoming', 'Incoming'),
-        ('outgoing', 'Outgoing'),
-    ]
-
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_transactions')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_transactions', null=True, blank=True)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_transactions')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     receiver_name = models.CharField(max_length=255)
     receiver_account_number = models.CharField(max_length=20)
     description = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(default=timezone.now)
-    transaction_type = models.CharField(max_length=8, choices=TRANSACTION_TYPE_CHOICES, null=True)
 
     def __str__(self):
         return f"Transaction {self.transaction_id} from {self.sender.email} to {self.receiver.email}"

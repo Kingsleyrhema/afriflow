@@ -110,27 +110,14 @@ class TransferView(APIView):
             sender_wallet.save()
             recipient_wallet.save()
 
-            # Create outgoing transaction for sender
             Transaction.objects.create(
-                sender=request.user,
-                receiver=recipient_user,
-                amount=amount,
-                receiver_name=recipient_user.full_name,
-                receiver_account_number=recipient_wallet.wallet_number,
-                description=description,
-                transaction_type='outgoing'
-            )
-
-            # Create incoming transaction for recipient
-            Transaction.objects.create(
-                sender=request.user,
-                receiver=recipient_user,
-                amount=amount,
-                receiver_name=request.user.full_name,
-                receiver_account_number=sender_wallet.wallet_number,
-                description=description,
-                transaction_type='incoming'
-            )
+            sender=request.user,
+            receiver=recipient_user,
+            amount=amount,
+            receiver_name=recipient_user.full_name,
+            receiver_account_number=recipient_wallet.wallet_number,
+            description=description,
+             )
 
             return Response({
                 'message': f'Transferred {amount} to {recipient_user.full_name} ({recipient_wallet_number}) successfully.',
@@ -149,12 +136,14 @@ class TransactionListView(generics.ListAPIView):
         user = self.request.user
         transaction_type = self.request.query_params.get('type', None)
 
-        queryset = Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
-
-        if transaction_type in ['incoming', 'outgoing']:
-            queryset = queryset.filter(transaction_type=transaction_type)
-
-        return queryset
+        if transaction_type == 'outgoing':
+            return Transaction.objects.filter(sender=user).order_by('-timestamp')
+        elif transaction_type == 'incoming':
+            return Transaction.objects.filter(receiver=user).order_by('-timestamp')
+        else:
+            # Return all transactions where user is sender or receiver
+            return Transaction.objects.filter(Q(sender=user) | Q(receiver=user)).order_by('-timestamp')
+        
 
 class TransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer

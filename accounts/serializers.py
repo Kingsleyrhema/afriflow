@@ -74,5 +74,5 @@ class TransferSerializer(serializers.Serializer):
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ['transaction_id', 'sender', 'receiver', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp', 'transaction_type']
+        fields = ['transaction_id', 'sender', 'receiver', 'amount', 'receiver_name', 'receiver_account_number', 'description', 'timestamp']
         read_only_fields = ['transaction_id', 'timestamp', 'sender', 'receiver']
