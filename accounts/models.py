@@ -106,7 +106,7 @@ class Transaction(models.Model):
     receiver_account_number = models.CharField(max_length=20)
     description = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(default=timezone.now)
-    transaction_type = models.CharField(max_length=8, choices=TRANSACTION_TYPE_CHOICES)
+    transaction_type = models.CharField(max_length=8, choices=TRANSACTION_TYPE_CHOICES, null=True)
 
     def __str__(self):
         return f"Transaction {self.transaction_id} from {self.sender.email} to {self.receiver.email}"
