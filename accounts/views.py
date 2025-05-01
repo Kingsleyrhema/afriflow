@@ -223,7 +223,7 @@ You are a patient, smart, and kind assistant. Your job is not just to inform—b
 """
 
 
-    OPENROUTER_API_KEY = "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"
+    OPENROUTER_API_KEY = ""
     OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def post(self, request):
