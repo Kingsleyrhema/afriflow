@@ -274,7 +274,7 @@ You are a patient, smart, and kind assistant. Your job is not just to inform—b
 
             return Response({
                 "reply": assistant_reply,
-                "session_id": chat_session.session_id
+                "session_id": str(chat_session.session_id)
             })
         except requests.RequestException as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
