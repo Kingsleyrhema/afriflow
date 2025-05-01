@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import CustomUser, Wallet, Transaction
+from .models import CustomUser, Wallet, Transaction, ChatSession, ChatMessage
 import re
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -100,3 +100,20 @@ class TransactionSerializer(serializers.ModelSerializer):
             elif obj.receiver == user:
                 return 'incoming'
         return 'unknown'
+    
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'role', 'content', 'timestamp']
+
+class ChatSessionSerializer(serializers.ModelSerializer):
+    messages = ChatMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChatSession
+        fields = ['session_id', 'user', 'created_at', 'updated_at', 'messages']
+        read_only_fields = ['session_id', 'user', 'created_at', 'updated_at', 'messages']
+
+class ChatPromptSerializer(serializers.Serializer):
+    prompt = serializers.CharField(max_length=2000)
+

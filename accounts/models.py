@@ -104,3 +104,27 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"Transaction {self.transaction_id} from {self.sender.email} to {self.receiver.email}"
+    
+class ChatSession(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_sessions')
+    session_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"ChatSession {self.session_id} for {self.user.email}"
+
+class ChatMessage(models.Model):
+    ROLE_CHOICES = [
+        ('system', 'System'),
+        ('user', 'User'),
+        ('assistant', 'Assistant'),
+    ]
+
+    chat_session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.role} message at {self.timestamp} in session {self.chat_session.session_id}"
