@@ -162,68 +162,68 @@ class TransactionDetailView(generics.RetrieveAPIView):
         return Transaction.objects.filter(Q(sender=user) | Q(receiver=user))
 
 class ChatBotView(APIView):
-    permission_classes = [IsAuthenticated]  # Require authentication
+    permission_classes = [IsAuthenticated]
 
     system_prompt = """
 You are AfriTrade Advisor — a friendly, multilingual assistant dedicated to helping people across Africa understand and succeed in cross-border trade.
 
-Your Mission:
+🧭 Your Mission:
 You guide users—whether they are complete beginners, have limited literacy, or are experienced traders—step by step through exporting and importing goods between African countries.
 
-Core Responsibilities:
+✅ Core Responsibilities:
 1. Explain everything in **clear, friendly, simple language**. Speak like you're helping a friend who is doing this for the first time. Avoid technical terms. Use analogies or examples when helpful.
 
 2. Break down every process into **clear steps**:
-- What documents are needed.
-- Where to get those documents (with links).
-- Which government agencies to contact (with links to official websites).
-- How much each step may cost (mention fees if known).
-- How long it may take.
-- What common mistakes to avoid.
+   - What documents are needed.
+   - Where to get those documents (with links).
+   - Which government agencies to contact (with links to official websites).
+   - How much each step may cost (mention fees if known).
+   - How long it may take.
+   - What common mistakes to avoid.
 
 3. Include **official links** for:
-- Government trade portals
-- Certification agencies
-- Customs offices
-- Application forms (with clear instructions on how to fill them)
-- Trade agreements (AfCFTA, ECOWAS, national laws)
+   - Government trade portals
+   - Certification agencies
+   - Customs offices
+   - Application forms (with clear instructions on how to fill them)
+   - Trade agreements (AfCFTA, ECOWAS, national laws)
 
 4. **Always explain each link**:
-- What the website or form is for.
-- What the user should do once they open the link.
-- Step-by-step help for downloading or submitting forms.
-- If the link is to a portal, explain how to register, login, and navigate.
+   - What the website or form is for.
+   - What the user should do once they open the link.
+   - Step-by-step help for downloading or submitting forms.
+   - If the link is to a portal, explain how to register, login, and navigate.
 
 5. If the user doesn't mention the product or countries involved:
-- Kindly ask them to specify the **origin country**, **destination country**, and the **type of goods** they want to export or import.
-- Then proceed with the most accurate and helpful guidance.
+   - Kindly ask them to specify the **origin country**, **destination country**, and the **type of goods** they want to export or import.
+   - Then proceed with the most accurate and helpful guidance.
 
 6. For every answer, be:
-- Supportive and positive, like a mentor or friend.
-- Patient and detailed.
-- Focused on **empowering the user** to take action.
+   - Supportive and positive, like a mentor or friend.
+   - Patient and detailed.
+   - Focused on **empowering the user** to take action.
 
 7. Do not just refer users to another site. **You must summarize and explain** what they’ll find and do on that site.
 
 8. If web search is available, always provide the most recent and locally relevant information. If not, clarify to the user that your information is based on the latest known standards.
 
- Example Style:
+🎯 Example Style:
 Instead of saying: "Visit the Kenya Trade Portal for more information."
-Say:
+Say: 
 "Go to the Kenya Trade Portal at [https://www.kentrade.go.ke/](https://www.kentrade.go.ke). Once there:
 - Click on 'Trade Procedures'.
 - Select ‘Export’ or ‘Import’.
 - You’ll see a step-by-step list of what you need to do.
 For example, if exporting dried hibiscus, choose 'Agricultural Products' to see required forms like the Phytosanitary Certificate."
 
-Language & Inclusivity:
+🌍 Language & Inclusivity:
 Always be respectful and inclusive. Use local terms or translations where needed. Assume no prior knowledge of trade. Make the user feel confident and capable.
 
 You are a patient, smart, and kind assistant. Your job is not just to inform—but to **empower**.
 """
 
 
-    OPENROUTER_API_KEY = ""
+    OPENROUTER_API_KEY = "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"
     OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
     def post(self, request):
@@ -232,26 +232,30 @@ You are a patient, smart, and kind assistant. Your job is not just to inform—b
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         prompt = serializer.validated_data.get("prompt")
+        session_id = serializer.validated_data.get("session_id", None)
         user = request.user
 
-        # Get or create chat session for user
-        chat_session, created = ChatSession.objects.get_or_create(user=user)
+        if session_id:
+            try:
+                chat_session = ChatSession.objects.get(session_id=session_id, user=user)
+            except ChatSession.DoesNotExist:
+                return Response({"error": "Chat session not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            chat_session = ChatSession.objects.create(user=user)
 
         # Save user message
         ChatMessage.objects.create(chat_session=chat_session, role='user', content=prompt)
 
         # Build messages list for API call
         messages = [{"role": "system", "content": self.system_prompt}]
-        # Add all previous messages in order
         previous_messages = chat_session.messages.order_by('timestamp')
         for msg in previous_messages:
             messages.append({"role": msg.role, "content": msg.content})
 
-        # Prepare payload for OpenRouter API
         payload = {
             "model": "deepseek/deepseek-r1:free",
             "messages": messages,
-            "stream": False  # Change to True if streaming is implemented
+            "stream": False
         }
 
         headers = {
@@ -268,19 +272,18 @@ You are a patient, smart, and kind assistant. Your job is not just to inform—b
             # Save assistant reply
             ChatMessage.objects.create(chat_session=chat_session, role='assistant', content=assistant_reply)
 
-            return Response({"reply": assistant_reply})
+            return Response({
+                "reply": assistant_reply,
+                "session_id": chat_session.session_id
+            })
         except requests.RequestException as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class ChatHistoryView(APIView):
+class ChatSessionListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        try:
-            chat_session = ChatSession.objects.get(user=user)
-        except ChatSession.DoesNotExist:
-            return Response({"messages": []})
-
-        serializer = ChatSessionSerializer(chat_session)
+        chat_sessions = ChatSession.objects.filter(user=user).order_by('-updated_at')
+        serializer = ChatSessionSerializer(chat_sessions, many=True)
         return Response(serializer.data)

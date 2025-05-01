@@ -111,9 +111,10 @@ class ChatSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatSession
-        fields = ['session_id', 'user', 'created_at', 'updated_at', 'messages']
-        read_only_fields = ['session_id', 'user', 'created_at', 'updated_at', 'messages']
+        fields = ['session_id', 'title', 'created_at', 'updated_at', 'messages']
+        read_only_fields = ['session_id', 'created_at', 'updated_at', 'messages']
 
 class ChatPromptSerializer(serializers.Serializer):
     prompt = serializers.CharField(max_length=2000)
+    session_id = serializers.UUIDField(required=False)
 
